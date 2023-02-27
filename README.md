@@ -167,7 +167,7 @@ docker compose logs -f
 
 # 3rd party license
 
-evgeniy-khist/letsencrypt-docker-compose
+evgeniy-khist/letsencrypt-docker-compose  
 Nginx and Let’s Encrypt with Docker Compose in less than 3 minutes  
 Distributed under the Apache License, Version 2.0.
 
