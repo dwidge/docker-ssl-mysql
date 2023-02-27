@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  nginx:
+    extends:
+      file: nginx-ssl/docker-compose.yml
+      service: nginx
+    environment:
+      - DOMAINS=$DOMAINS
+      - CERTBOT_EMAILS=$CERTBOT_EMAILS
+      - CERTBOT_TEST_CERT=$CERTBOT_TEST_CERT
+      - CERTBOT_RSA_KEY_SIZE=$CERTBOT_RSA_KEY_SIZE
+    networks:
+      - frontend
+
+  certbot:
+    extends:
+      file: nginx-ssl/docker-compose.yml
+      service: certbot
+    environment:
+      - DOMAINS=$DOMAINS
+      - CERTBOT_EMAILS=$CERTBOT_EMAILS
+      - CERTBOT_TEST_CERT=$CERTBOT_TEST_CERT
+      - CERTBOT_RSA_KEY_SIZE=$CERTBOT_RSA_KEY_SIZE
+    networks:
+      - frontend
+
+  cron:
+    extends:
+      file: nginx-ssl/docker-compose.yml
+      service: cron
+    environment:
+      - COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME
+
+  mysqldb:
+    image: mysql:5.7
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_USERNAME=$DB_USERNAME
+      - MYSQL_ROOT_PASSWORD=$DB_PASSWORD
+      - MYSQL_DATABASE=$DB_NAME
+    ports:
+      - 3306:$DB_PORT
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - backend
+
+  api:
+    depends_on:
+      - mysqldb
+    build: ../api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NAME=${COMPOSE_PROJECT_NAME}:api
+      - HOST=http://api:4000
+      - PORT=4000
+    networks:
+      - backend
+      - frontend
+
+  console:
+    depends_on:
+      - api
+    build: ../console
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - REACT_APP_NAME=${COMPOSE_PROJECT_NAME}:console
+      - REACT_APP_PORT=3000
+    networks:
+      - frontend
+
+  main:
+    depends_on:
+      - api
+    build: ../main
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - REACT_APP_NAME=${COMPOSE_PROJECT_NAME}:main
+      - REACT_APP_PORT=3000
+    networks:
+      - frontend
+
+volumes:
+  db:
+  nginx_conf:
+  nginx_html:
+  letsencrypt_certs:
+  certbot_acme_challenge:
+
+networks:
+  backend:
+  frontend:
